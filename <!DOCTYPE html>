@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .game-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        #tetris-board {
+            border: 2px solid #333;
+            background-color: #111;
+        }
+        
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #next-piece {
+            border: 2px solid #333;
+            background-color: #111;
+            margin-bottom: 20px;
+        }
+        
+        .info-panel {
+            background-color: #ddd;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+border-radius:
+5px; cursor:
+pointer; margin-top:
+10px; } button:hover { background-color:
+#45a049; } .controls { margin-top:
+20px; text-align:
+left; } </style> </head> <body> <h1>俄罗斯方块</h1> <div class="game-container"> <canvas id="tetris-board" width="300" height="600"></canvas> <div class="side-panel"> <h3>下一个方块</h3> <canvas id="next-piece" width="150" height="150"></canvas> <div class="info-panel"> <p>分数：<span id="score">0</span></p> </div> <div class="info-panel"> <p>等级：<span id="level">1</span></p> </div> <button id="start-btn">开始游戏</button> </div> </div>
+
+<div class
+=
+"
+controls
+"
+>
+<h3
+>
+操作说明
+<
+/
+h3
+>
+<
+ul style
+=
+"
+text-align
+:
+left
+"
+>
+<li
+>
+← →
+箭头键：左右移动方块</li><li >↑箭头键：旋转方块</li><li >↓箭头键：加速下落</li><li >空格键：直接落到底部</li><li >P键：暂停/继续游戏</li></ul></div>
+
+<script>
+// 游戏常量
+const COLS = 10; // 游戏区域列数
+const ROWS = 20; // 游戏区域行数
+const BLOCK_SIZE =30;//每个方块的像素大小
+
+//获取画布和上下文 
+const canvas = document.getElementById('tetris-board'); const ctx = canvas.getContext('2d'); const nextCanvas = document.getElementById('next-piece'); const nextCtx = nextCanvas.getContext('2d');
+
+//缩放画布以适应高DPI屏幕 
+function scaleCanvas() { const scale = window.devicePixelRatio ||1;
+
+canvas.width=COLS*BLOCK_SIZE*scale; canvas.height=ROWS*BLOCK_SIZE*scale; ctx.scale(scale, scale);
+
+nextCanvas.width=5*BLOCK_SIZE*scale; nextCanvas.height=5*BLOCK_SIZE*scale; nextCtx.scale(scale, scale); } scaleCanvas();
+
+//方块形状定义 
+const SHAPES=[ [ [1,1,1,1],//I ], [ [1,1], [1,1],//O ], [ [0,1,0], [1,1,1],//T ], [ [0,0,1], [1,1,1],//L ], [ [1,0,0], [1 ,l,l],//J ], [[l,l,O],[O,l,l],/ /S ]，[[O，l，l]，[l，l,O]／Z]；／颜色定义const COLORS＝['＃00FFFF'，'#FFFF00','#800080','#FFA500','#0000FF','#00FF00','＃FF000O'];
+
+class Tetris{
+constructor(){ this.board=this.createBoard(); this.score=O； this.level=l； this.gameOver=false； this.paused=false； this.currentPiece=null； this.nextPiece=null； this.initControls(); }
+
+createBoard(){ return Array.from({length：ROWS},()=>Array(COLS).fill(O)); }
+
+newPiece(){ //随机创建一个新方块 const shapeIndex=Math.floor(Math.random()＊SHAPES.length); const shape＝SHAPES[shapeIndex]; const color＝COLORS[shapeIndex];
+
+this.currentPiece={ shape， color， pos:{x：Math.floor(COLS/2)-Math.floor(shape[O].length/2),y:-l}, rotation：O };
+
+if(!this.nextPiece){ this.generateNextPiece(); }else{ //将下一个方块设置为当前，并生成新的下一个方块 this.currentPiece.shape＝this.nextPiece.shape； this.currentPiece.color＝this.nextPiece.color； this.generateNextPiece(); } }
+
+generateNextPiece(){ const shapeIndex＝Math.floor(Math.random()＊SHAPES.length); const shape＝SHAPES[shapeIndex]; const color＝COLORS[shapeIndex];
+
+this.nextPiece={ shape， color }; }
+
+drawBoard(){ ctx.fillStyle='＃111'; ctx.fillRect(O,O ,canvas.width ,canvas.height);
+
+／绘制已固定的方块 for(let y ＝ O ; y＜ROWS ; y＋＋){ for(let x ＝ O ; x＜COLS ; x＋＋){ if(this.board[y][x]){ drawBlock(ctx,x,y ,this.board[y][x]); } } }
+
+／绘制当前移动的方块 if(this.currentPiece){ for(let y ＝ O ; y＜this.currentPiece.shape.length ; y＋＋){ for(let x ＝ O ; x＜this.currentPlece.shape[y].length ;x++){ if(this.currentPlece.shape[y][x]){ drawBlock(ctx,x +this.currentPlece.pos.x,y +this.currentPlece.pos.y ,thls. currentPlece.color); }}}}}
+
+drawNextPece(){ nextCtx.fillStyle='＃111'; nextCtx.fillRect(O,O ,nextCanvas.width ,nextCanvas.height);
+
+if(this.nextPece){ cons t centerX =(5 - thls.nextPece.shape[O].length)/2； cons t centerY =(5 - thls.nextPece.shape.length)/2；
+
+for(let y ＝ O ; y＜thls.nextPece.shape.length ；y++){ for(let x ＝ O ；x＜thls.nex tPe ce.s ha pe[y ]. length ；X++){ if(thls.nextPe ce.s ha pe[y][x]){ drawBlock(nextCtx,x +centerX,y +centerY ,thls.nex tPe ce.color);}}}}}
+
+update(){ if(this.gameOver || thls.paused)return;
+
+／移动当前方决向下 let newPos={...thls.currentPlece.pos}; newPos.y++;
+
+if(!thls.collision(newPos)){ thls. currentP le ce.pos=newPos;}else{／固定到板上 th is.lock();
+
+／检查是否有完整的行并清除 th is.clearLines();
+
+／创建新方决 th is.newP le ce();
+
+／检查游戏是否结束 if(th is.collision(th is. currentPl e ce.pos)){ th is.gameOver=true;a lert(`游戏结束！你的得分是${th is.score}`);}}}
+
+collision(pos){ cons t s ha pe =th ls. currentPl e ce.s ha pe;
+
+for(let y ＝ O ；y＜s ha pe.length ；y++){ for(let x ＝ O ；x＜s ha pe[y ]. length ；X++){ if(s ha pe[y][x]!==O){ cons t boardX=x ＋pos.x； cons t boardY=y ＋pos.y；
+
+if(boardX<O || boardX>=COLS || boardY>=ROWS || (boardY>=O && th ls.board[boardY][boardX])){ return true;} }}}
+
+return false;} 
+
+lock(){ cons t s ha pe =th ls. currentPl e ce.s ha pe;
+
+for(let y ＝ O ；y＜s ha pe.length ；y++){ for(let x ＝ O ；x＜s ha pe[y ]. length ；X++){ if(s hape[y][x]){
+
+cons t boardY=y ＋th ls. currentPl e ce.pos.y；
+cons t boardX=x ＋th ls. currentPl e ce.pos.x；
+
+if(boardY>=o){
+ths.board[boardY][boardX]=ths.currentPlece.color;} }}}}
+
+clearLines(){
+let linesCleared = o ;
+
+for (let y = ROWS - l ; y >= o ; y--) {
+let lineComplete=true ;
+
+for (let x = o ; x< COLS ; X++) { 
+if (!ths.board[y][x]) { 
+lineComplete=false ;
+break ;
+}
+}
+
+if (lineComplete) { 
+linesCleared++ ;
+
+for (let yy=y ; yy > o ; yy--) { 
+ths.board[yy]=[...ths.board[yy - l]] ;
+}
+
+ths.board[o]=Array(COLS).fill(o);
+y++; /重新检查当前行（原来的上一行）}
+}
+
+if (linesCleared > o) { 
+ths.score += linesCleared * linesCleared * lOO * ths.level ;
+document.getElementById('score').textContent=ths.score ;
+
+if (Math.floor(ths.score / lOOo) >= ths.level) { 
+ths.level++ ;
+document.getElementById('level').textContent=ths.level;}
+}}}
+
+rotate() {
+const originalShape=ths.currentPlece.shape ;
+const rotatedShape=[];
+const size=originalShape.length ;
+
+for (let i = o ; i<size;i++){
+rotatedShape[i]=[];
+for (let j=o;j<size;j++){
+rotatedShape[i][j]=originalShape[size - j - l][i];
+}
+}
+
+const originalRotation=ths.currentPlece.rotation ;
+ths.currentPlece.rotation=(originalRotation + l)%4;
+
+const originalShapeBackup=[...originalShape];
+ths.currentPlece.shape=[...rotatedShape];
+
+if (ths.collision(ths.currentPlece.pos)) { 
+tryWallKick();
+}
+
+function tryWallKick(){
+const offsets=[
+{x:-l,y :o},
+{x : l,y :o},
+{x :o,y :-l},
+{x :o,y : l}
+];
+
+for (let offset of offsets){
+let newPos={
+x : ths .current P le c e.p os.x+offset.x,
+y : th s .current P le c e.p os.y+offset.y};
+
+if (!t h s.collision(newPos)){
+t h s .current P le c e.p os=newPos ;
+return true;}
+}
+
+t h s .current P le c e.sha p e=[...original Shape Back up];
+t h s .current P le c e.rota tion=original Rotation ;
+return false;}
+}
+
+initControls(){
+document.addEventListener('keydown',e=>{
+if(t h s.gameOver||!t h s.current Piece)return;
+
+switch(e.keyCode){
+case37://左箭头键 move(-l);
+break ;
+
+case39://右箭头键 move(l);
+break ;
+
+case40://下箭头键 moveDown();
+break ;
+
+case38://上箭头键 rotate();
+break ;
+
+case32://空格键 hardDrop();
+break ;
+
+case80://P键 toggle Pause();
+break ;
+}});
+
+document.getElementById('start-btn').addEventListener('click',()=>{
+t h s.reset();
+});
+
+function move(direction){
+let newPos={...t h s .current Piece.pos};
+new Pos.x+=direction;
+
+if(!t h s.collision(new Pos)){
+t h s .current Piece.pos=new Pos;}
+}
+
+function moveDown(){
+update();
+}
+
+function hardDrop(){
+while(!t hs.collision({...t hs.current Piece.pos,y:t hs.current Piece.pos.y+l})){
+t hs.
+current Piece.
+pos.
+y++;
+}
+update();} 
+
+function toggle Pause(){
+if(t hs.game Over)return;
+
+t hs.paused=
+!t hs.paused;}
+} 
+
+reset(){
+ts.board=t his.create Board();
+ts.score=
+o；
+ts.level=l；
+ts.game Over=false；
+ts.paused=false；
+document.getElementById(
+'score'
+).
+text Content=
+''
++
+o；
+document.
+get Element By Id(
+'level'
+).
+text Content=
+'l'
+；
+ts.new Piece();
+} 
+
+run(){
+set Interval(()=>{
+ts.update();
+ts.draw Board();
+ts.draw Next Peice();},looo/Math.min(l+
+ts.level *
+o.l,l6));
+}} 
+
+function draw Block(context,x,y,col or){
+context.fill Style=
+col or；
+context.fill Rect(x *
+BLOCK SIZE+
+l,y *
+BLOCK SIZE+
+l,
+BLOCK SIZE-
+2,
+BLOCK SIZE-
+2);
+context.stroke Style='#
+ooo'
+；
+context.stroke Rect(x *
+BLOCK SIZE+
+l,y *
+BLOCK SIZE+
+l,
+BLOCK SIZE-
+2,
+BLOCK SIZE-
+2);
+} 
+
+//初始化游戏
+
+window.onload=
+
+function(){
+
+game=
+
+new Tetris();
+
+game.run();
+
+};
+
+<
+/
+script>
+
+<
+/
+body>
+
+<
+/
+html>
